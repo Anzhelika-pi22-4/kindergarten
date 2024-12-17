@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ru"
+      xmlns:th="http://www.thymeleaf.org"
+>
+<head>
+    <meta charset="UTF-8">
+    <title>Детский Сад</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC"
+          crossorigin="anonymous">
+    <link href="./templates/style.css" rel="stylesheet" />
+    <style>
+        body {
+            background-image: url("https://asi.org.ru/wp-content/uploads/2022/07/thumbnail_detsad-1.jpg");
+            background-color: rgba(230, 230, 250);
+            background-blend-mode: multiply;
+        }
+        h1, h4, h5, th, tr, td {
+            color: white;
+        }
+    </style>
+    <style>
+        .card-header {
+            border: none;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 5px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            cursor: pointer;
+        }
+
+        .btn-primary_role {
+            background-color: rgba(111, 209, 46, 0.8);
+            color: white;
+        }
+
+        .btn-delete_user {
+            background-color: rgba(205, 67, 67, 0.8);
+            color: white;
+        }
+
+        .admin-button {
+            background-color: rgba(100, 149, 237, 0.8);
+            color: white;
+        }
+        .custom-select {
+            background-color: rgba(100, 149, 237, 0.8);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 8px 10px;
+            font-size: 14px;
+            cursor: pointer;
+            outline: none;
+            transition: background-color 0.3s ease;
+        }
+
+        .custom-select option {
+            background-color: white;
+            color: black;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark justify-content-between" style="background-color: rgba(9,11,42,0.80)">
+    </ul>
+    <div class="container-fluid">
+        <a class="navbar-brand" th:href="@{/index}">Информационно-справочная система "Детский Сад"</a>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link active" aria-current="page" th:href="@{/about}">Об авторе</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" aria-current="page" th:href="@{/admin}">Пользователи</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" aria-current="page" th:href="@{/logout}">Выход</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+<div class="card" style="background-color: #17a2b8">
+    <div class="card-header">
+        <blockquote class="blockquote text-center"><h2 class="admin_h2_panel">Список пользователей</h2></blockquote>
+    </div>
+    <div class="table-container">
+        <table class="table table-striped table-hover" id="usersTable">
+            <thead>
+            <tr>
+                <th scope="col">Имя</th>
+                <th scope="col">Фамилия</th>
+                <th scope="col">Email</th>
+                <th scope="col">Роль</th>
+                <th scope="col">Действия</th>
+            </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <button onclick="window.location.href='/'" class="admin-button">Выход</button>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            loadUsers();
+
+            function loadUsers() {
+                $.ajax({
+                    url: '/api/admin/users',
+                    method: 'GET',
+                    success: function(data) {
+                        var tableBody = $('#usersTable tbody');
+                        tableBody.empty();
+
+                        $.each(data, function(index, user) {
+                            console.log("Обработка пользователя:", user);
+                            var row = '<tr>' +
+                                // '<td>' + user.id + '</td>' +
+                                '<td>' + user.firstName + '   ' + '</td>' +
+                                '<td>' + user.lastName + '   ' + '</td>' +
+                                '<td>' + user.email + '   ' + '</td>' +
+                                '<td>' +
+                                '<select name="role-' + user.id + '" class="custom-select">' +
+                                '<option value="ROLE_USER" ' + (user.role === 'ROLE_USER' ? 'selected' : '') + '>User</option>' +
+                                '<option value="ROLE_ADMIN" ' + (user.role === 'ROLE_ADMIN' ? 'selected' : '') + '>Admin</option>' +
+                                '</select>' +
+                                '</td>' +
+                                '<td>' +
+                                '<button class="btn-primary_role" data-user-id="' + user.id + '">Изменить роль</button>' +
+                                '<button class="btn-delete_user" data-user-id="' + user.id + '">Удалить</button>' +
+                                '</td>' +
+                                '</tr>';
+                            tableBody.append(row);
+                        });
+
+                        $('.btn-primary_role').on('click', function() {
+                            var userId = $(this).data('user-id');
+                            var newRole = $('select[name="role-' + userId + '"]').val();
+                            updateUserRole(userId, newRole);
+                        });
+
+                        $('.btn-delete_user').on('click', function() {
+                            var userId = $(this).data('user-id');
+                            deleteUser(userId);
+                        });
+                    },
+                    error: function() {
+                        alert('Ошибка при загрузке пользователей.');
+                    }
+                });
+            }
+
+            function updateUserRole(userId, newRole) {
+                $.ajax({                url: 'api/admin/users/update',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ id: userId, role: newRole }),
+                    success: function() {
+                        alert('Роль пользователя обновлена.');
+                        loadUsers();
+                    },
+                    error: function() {
+                        alert('Ошибка при обновлении роли пользователя.');
+                    }
+                });
+            }
+
+            function deleteUser(userId) {
+                if (confirm('Вы уверены, что хотите удалить этого пользователя?')) {
+                    $.ajax({
+                        url: '/api/admin/users/' + userId,
+                        method: 'DELETE',
+                        success: function() {
+                            alert('Пользователь удален.');
+                            loadUsers();
+                        },
+                        error: function() {
+                            alert('Ошибка при удалении пользователя.');
+                        }
+                    });
+                }
+            }
+        });
+
+
+    </script>
+    <div class="container-fluid" style="height: 300px;"></div>
+    <div class="container-fluid" style="width: 100%; background-color: rgba(9,11,42,0.50); ">
+        <!-- Footer -->
+        <footer class=" text-center text-white ">
+            <!-- Grid container -->
+            <div class="container p-4">
+                <!-- Section: Social media -->
+                <section class="mb-4">
+
+
+                    <script src="https://kit.fontawesome.com/4e798326bd.js" crossorigin="anonymous"></script>
+
+                </section>
+                <div class="container   p-4">
+                    <!--Grid row-->
+                    <div class="row mt-4">
+                        <!--Grid column-->
+                        <div class="col-lg-6 col-md-12 mb-4 mb-md-0">
+                            <h5 class="text-uppercase mb-4">Об авторе</h5>
+
+                            <p>
+                                Информационно-справочная система "Детский Сад".
+                            </p>
+
+                            <p>
+                                Работа выполнена Гусевой Анжеликой ПИ22-3
+                            </p>
+
+
+                        </div>
+                        <!--Grid column-->
+
+                        <!--Grid column-->
+                        <div class="col-lg-6 col-md-6 mb-4 mb-md-0">
+                            <h5 class="text-uppercase mb-4">Контакты</h5>
+
+                            <ul class="fa-ul" style="margin-left: 1.65em;">
+                                <li class="mb-3">
+                                    <span class="fa-li"><i class="fas fa-home"></i></span><span class="ms-2">4-й Вешняковский пр-д, 4, Москва, 109456</span>
+                                </li>
+                                <li class="mb-3">
+                                    <span class="fa-li"><i class="fas fa-envelope"></i></span><span class="ms-2">root@mail.ru</span>
+                                </li>
+                                <li class="mb-3">
+                                    <span class="fa-li"><i class="fas fa-phone"></i></span><span class="ms-2">+ 7 (999)-999-99-99</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Copyright -->
+            <div class="text-center p-3" style="background-color: rgba(0, 0, 0, 0.2);">
+                © 2024 Copyright: Все права защищены
+
+            </div>
+
+        </footer>
+        <!-- Footer -->
+    </div>
+</div>
+
+
+</body>
+</html>
